@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>漫画阅读平台</title>
+  <style>
+    /* ===== Reset & Base ===== */
+    *{margin:0;padding:0;box-sizing:border-box}
+    *::before,*::after{box-sizing:border-box}
+    :root{
+      --bg:#0f0f1a;--bg-card:#1a1a2e;--bg-elevated:#22223a;--bg-input:#16213e;
+      --border:#2a2a4a;--text:#e8e8f0;--text-muted:#8888aa;--text-dim:#5a5a7a;
+      --primary:#6c5ce7;--primary-hover:#5a4bd1;--accent:#00cec9;--danger:#e74c3c;
+      --success:#2ecc71;--warning:#f39c12;--radius:10px;--radius-sm:6px;
+      --shadow:0 4px 20px rgba(0,0,0,.3);--shadow-lg:0 8px 40px rgba(0,0,0,.5);
+      --transition:.2s ease;
+    }
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+    ::-webkit-scrollbar{width:8px;height:8px}
+    ::-webkit-scrollbar-track{background:var(--bg)}
+    ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+    ::-webkit-scrollbar-thumb:hover{background:var(--text-dim)}
+    #app{min-height:100vh;display:flex;flex-direction:column}
+
+    /* ===== Navbar ===== */
+    .navbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+    .navbar-brand{font-size:18px;font-weight:700;color:var(--primary);cursor:pointer;display:flex;align-items:center;gap:8px}
+    .navbar-brand span{color:var(--accent)}
+    .navbar-nav{display:flex;gap:4px;align-items:center}
+    .nav-link{padding:8px 16px;color:var(--text-muted);cursor:pointer;border-radius:var(--radius-sm);font-size:14px;transition:var(--transition);border:none;background:none}
+    .nav-link:hover{color:var(--text);background:var(--bg-elevated)}
+    .nav-link.active{color:var(--primary);background:rgba(108,92,231,.1)}
+    .navbar-user{display:flex;align-items:center;gap:12px}
+    .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#fff;flex-shrink:0}
+    .user-name{font-size:13px;color:var(--text);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+    /* ===== Buttons ===== */
+    .btn{padding:10px 20px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:6px;justify-content:center}
+    .btn-primary{background:var(--primary);color:#fff}
+    .btn-primary:hover{background:var(--primary-hover)}
+    .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+    .btn-secondary{background:var(--bg-elevated);color:var(--text);border:1px solid var(--border)}
+    .btn-secondary:hover{background:var(--border)}
+    .btn-danger{background:var(--danger);color:#fff}
+    .btn-danger:hover{opacity:.85}
+    .btn-ghost{background:transparent;color:var(--text-muted);padding:6px 12px}
+    .btn-ghost:hover{color:var(--text);background:var(--bg-elevated)}
+    .btn-sm{padding:6px 14px;font-size:13px}
+
+    /* ===== Layout ===== */
+    .main-content{flex:1;padding:24px;max-width:1400px;margin:0 auto;width:100%}
+    .view{display:none}.view.active{display:block}
+    .card{background:var(--bg-card);border-radius:var(--radius);padding:20px;border:1px solid var(--border)}
+
+    /* ===== Forms ===== */
+    .form-group{margin-bottom:16px}
+    .form-label{display:block;font-size:13px;color:var(--text-muted);margin-bottom:6px;font-weight:500}
+    .form-input,.form-textarea,.form-select{width:100%;padding:10px 14px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-family:inherit;transition:var(--transition)}
+    .form-input:focus,.form-textarea:focus,.form-select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(108,92,231,.1)}
+    .form-textarea{min-height:80px;resize:vertical}
+    .form-error{color:var(--danger);font-size:12px;margin-top:4px}
+    .form-hint{color:var(--text-dim);font-size:12px;margin-top:4px}
+
+    /* ===== Auth ===== */
+    .auth-container{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 56px);padding:24px}
+    .auth-card{background:var(--bg-card);border-radius:var(--radius);padding:36px;width:100%;max-width:400px;border:1px solid var(--border);box-shadow:var(--shadow-lg)}
+    .auth-title{font-size:24px;font-weight:700;margin-bottom:8px;text-align:center}
+    .auth-subtitle{color:var(--text-muted);text-align:center;margin-bottom:24px;font-size:14px}
+    .auth-tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--bg-input);border-radius:var(--radius-sm);padding:4px}
+    .auth-tab{flex:1;padding:8px;text-align:center;cursor:pointer;border-radius:var(--radius-sm);font-size:14px;color:var(--text-muted);transition:var(--transition);border:none;background:none}
+    .auth-tab.active{background:var(--primary);color:#fff}
+
+    /* ===== Manga Grid ===== */
+    .manga-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px}
+    .manga-card{background:var(--bg-card);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);transition:var(--transition);cursor:pointer}
+    .manga-card:hover{transform:translateY(-4px);border-color:var(--primary);box-shadow:var(--shadow)}
+    .manga-cover{width:100%;aspect-ratio:3/4;background:var(--bg-input);display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .manga-cover img{width:100%;height:100%;object-fit:cover}
+    .manga-cover-placeholder{font-size:40px;color:var(--text-dim)}
+    .manga-info{padding:12px}
+    .manga-title{font-size:14px;font-weight:600;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .manga-meta{font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between}
+
+    /* ===== Section ===== */
+    .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .section-title{font-size:20px;font-weight:700}
+    .search-bar{display:flex;gap:8px;margin-bottom:20px}
+    .search-bar .form-input{flex:1}
+
+    /* ===== Reader ===== */
+    .reader-container{position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:1000;display:none;flex-direction:column}
+    .reader-container.active{display:flex}
+    .reader-toolbar{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:rgba(0,0,0,.8);color:#fff;z-index:10}
+    .reader-title{font-size:14px;font-weight:600}
+    .reader-controls{display:flex;gap:8px;align-items:center}
+    .reader-page-container{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;position:relative}
+    .reader-page-img{max-width:100%;max-height:100%;object-fit:contain;user-select:none}
+    .reader-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
+    .reader-nav:hover{background:rgba(255,255,255,.2)}
+    .reader-nav:disabled{opacity:.3;cursor:not-allowed}
+    .reader-nav.prev{left:16px}
+    .reader-nav.next{right:16px}
+    .reader-page-info{text-align:center;padding:8px;background:rgba(0,0,0,.8);color:#fff;font-size:13px}
+
+    /* ===== Danmaku ===== */
+    .danmaku-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:5}
+    .danmaku-item{position:absolute;white-space:nowrap;color:#fff;font-size:18px;font-weight:600;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;animation:dm-scroll linear forwards}
+    @keyframes dm-scroll{from{transform:translateX(100%)}to{transform:translateX(-100%)}}
+    .danmaku-input-bar{display:flex;gap:8px;padding:8px 16px;background:rgba(0,0,0,.85);z-index:10}
+    .danmaku-input{flex:1;padding:8px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:var(--radius-sm);color:#fff;font-size:14px}
+    .danmaku-input::placeholder{color:rgba(255,255,255,.4)}
+    .danmaku-input:focus{outline:none;border-color:var(--primary)}
+    .dm-toggle{padding:8px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:var(--radius-sm);color:#fff;cursor:pointer;font-size:13px}
+    .dm-toggle.off{opacity:.5}
+    .dm-toggle.on{color:var(--accent);border-color:var(--accent)}
+
+    /* ===== Chapter List ===== */
+    .chapter-list{display:flex;flex-direction:column;gap:4px}
+    .chapter-item{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-card);border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition);border:1px solid transparent}
+    .chapter-item:hover{border-color:var(--primary)}
+    .chapter-name{font-size:14px;font-weight:500}
+    .chapter-date{font-size:12px;color:var(--text-muted)}
+
+    /* ===== Upload ===== */
+    .upload-area{border:2px dashed var(--border);border-radius:var(--radius);padding:40px;text-align:center;cursor:pointer;transition:var(--transition);margin-bottom:16px}
+    .upload-area:hover{border-color:var(--primary);background:rgba(108,92,231,.05)}
+    .upload-area.dragover{border-color:var(--primary);background:rgba(108,92,231,.1)}
+    .upload-icon{font-size:40px;margin-bottom:8px}
+    .upload-text{color:var(--text-muted);font-size:14px}
+    .file-list{margin-top:12px}
+
+    /* ===== Modal ===== */
+    .modal-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:500;padding:24px}
+    .modal-overlay.active{display:flex}
+    .modal{background:var(--bg-card);border-radius:var(--radius);padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;border:1px solid var(--border);box-shadow:var(--shadow-lg)}
+    .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .modal-title{font-size:18px;font-weight:700}
+    .modal-close{font-size:22px;cursor:pointer;color:var(--text-muted);background:none;border:none;padding:4px}
+    .modal-close:hover{color:var(--text)}
+
+    /* ===== Friends ===== */
+    .friends-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    @media(max-width:768px){.friends-layout{grid-template-columns:1fr}.manga-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}}
+    .friend-item{display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-card);border-radius:var(--radius-sm);margin-bottom:8px;border:1px solid var(--border)}
+    .friend-info{flex:1}
+    .friend-name{font-size:14px;font-weight:500}
+    .friend-status{font-size:12px;color:var(--text-muted)}
+
+    /* ===== Empty & Loading ===== */
+    .empty-state{text-align:center;padding:40px;color:var(--text-muted)}
+    .empty-state-icon{font-size:48px;margin-bottom:12px}
+    .empty-state-text{font-size:14px}
+
+    /* ===== Toast ===== */
+    .toast-container{position:fixed;top:70px;right:24px;z-index:2000;display:flex;flex-direction:column;gap:8px}
+    .toast{padding:12px 20px;border-radius:var(--radius-sm);font-size:14px;box-shadow:var(--shadow);animation:toast-in .3s ease;max-width:360px}
+    .toast-success{background:var(--success);color:#fff}
+    .toast-error{background:var(--danger);color:#fff}
+    .toast-info{background:var(--primary);color:#fff}
+    @keyframes toast-in{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+    /* ===== Badge ===== */
+    .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+    .badge-primary{background:rgba(108,92,231,.2);color:var(--primary)}
+    .badge-success{background:rgba(46,204,113,.2);color:var(--success)}
+    .badge-warning{background:rgba(243,156,18,.2);color:var(--warning)}
+
+    /* ===== Loading ===== */
+    .loading-spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loading-overlay{display:flex;align-items:center;justify-content:center;min-height:200px}
+
+    /* ===== Detail ===== */
+    .manga-detail{display:grid;grid-template-columns:240px 1fr;gap:24px}
+    @media(max-width:600px){.manga-detail{grid-template-columns:1fr}}
+    .manga-detail-cover{width:100%;aspect-ratio:3/4;border-radius:var(--radius);overflow:hidden;background:var(--bg-input)}
+    .manga-detail-cover img{width:100%;height:100%;object-fit:cover}
+    .manga-detail-info h1{font-size:24px;margin-bottom:8px}
+    .manga-detail-author{color:var(--text-muted);margin-bottom:12px;font-size:14px}
+    .manga-detail-desc{color:var(--text);margin-bottom:16px;font-size:14px;line-height:1.8}
+    .manga-detail-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .tag{display:inline-block;padding:2px 10px;background:var(--bg-elevated);border-radius:12px;font-size:12px;color:var(--text-muted);margin-right:4px;margin-bottom:4px}
+
+    @media(max-width:600px){.navbar{padding:0 12px}.nav-link{padding:6px 10px;font-size:13px}.main-content{padding:12px}.user-name{display:none}}
+
+    /* ===== Image Editor ===== */
+    .editor-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:#1a1a2e;z-index:1500;display:none;flex-direction:column}
+    .editor-overlay.active{display:flex}
+    .editor-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:4px;padding:8px 12px;background:var(--bg-card);border-bottom:1px solid var(--border)}
+    .editor-tool-btn{width:36px;height:36px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-elevated);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:var(--transition)}
+    .editor-tool-btn:hover{border-color:var(--primary);background:rgba(108,92,231,.1)}
+    .editor-tool-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .editor-separator{width:1px;height:24px;background:var(--border);margin:0 4px}
+    .editor-color-picker{width:36px;height:36px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;background:none;padding:0}
+    .editor-size-slider{width:80px;accent-color:var(--primary)}
+    .editor-canvas-area{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;background:#0f0f1a;position:relative}
+    .editor-canvas-wrapper{position:relative;display:inline-block}
+    #editorCanvas{display:block;border:1px solid var(--border);background:#fff;cursor:crosshair;max-width:100%;max-height:100%}
+    .editor-canvas-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+    .editor-bottom-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg-card);border-top:1px solid var(--border)}
+    .editor-layer-panel{display:flex;gap:4px;align-items:center}
+    .editor-layer-item{padding:4px 8px;background:var(--bg-elevated);border-radius:var(--radius-sm);font-size:12px;cursor:pointer;border:1px solid var(--border)}
+    .editor-layer-item.active{border-color:var(--primary);background:rgba(108,92,231,.1)}
+    .editor-info{font-size:12px;color:var(--text-muted)}
+    .color-palette{display:flex;gap:2px;flex-wrap:wrap;max-width:200px}
+    .color-swatch{width:18px;height:18px;border-radius:3px;cursor:pointer;border:1px solid rgba(255,255,255,.2)}
+
+    /* ===== Watermark ===== */
+    .watermark-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:6;overflow:hidden}
+    .watermark-tile{position:absolute;color:rgba(255,255,255,.12);font-size:14px;font-weight:600;white-space:nowrap;transform:rotate(-30deg);user-select:none}
+    .reader-page-img{user-select:none;-webkit-user-drag:none;pointer-events:none}
+
+    /* ===== Chapter Edit ===== */
+    .page-edit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-top:16px}
+    .page-edit-item{position:relative;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);aspect-ratio:3/4;background:var(--bg-input)}
+    .page-edit-item img{width:100%;height:100%;object-fit:cover}
+    .page-edit-num{position:absolute;top:4px;left:4px;background:rgba(0,0,0,.7);color:#fff;font-size:11px;padding:2px 6px;border-radius:3px}
+    .page-edit-actions{position:absolute;bottom:0;left:0;right:0;display:flex;background:rgba(0,0,0,.7);padding:4px;gap:4px}
+    .page-edit-actions button{flex:1;padding:4px;font-size:11px;border:none;border-radius:3px;cursor:pointer;color:#fff}
+    .page-edit-actions .btn-edit{background:var(--primary)}
+    .page-edit-actions .btn-del{background:var(--danger)}
+    .page-edit-actions .btn-up{background:var(--bg-elevated)}
+    .page-edit-actions .btn-down{background:var(--bg-elevated)}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar" style="display:none;">
+      <div class="navbar-brand" onclick="App.navigate('home')">📚 <span>MangaReader</span></div>
+      <div class="navbar-nav">
+        <button class="nav-link" data-view="home" onclick="App.navigate('home')">首页</button>
+        <button class="nav-link" data-view="upload" onclick="App.navigate('upload')">上传</button>
+        <button class="nav-link" data-view="myworks" onclick="App.navigate('myworks')">我的作品</button>
+        <button class="nav-link" data-view="friends" onclick="App.navigate('friends')">好友</button>
+      </div>
+      <div class="navbar-user">
+        <div class="user-avatar" id="navAvatar"></div>
+        <span class="user-name" id="navUserName"></span>
+        <button class="btn btn-ghost btn-sm" onclick="App.logout()">退出</button>
+      </div>
+    </nav>
+
+    <!-- Main -->
+    <div class="main-content" id="mainContent" style="display:none;">
+      <!-- Home -->
+      <div class="view" id="view-home">
+        <div class="section-header"><h2 class="section-title">全部漫画</h2></div>
+        <div class="search-bar"><input class="form-input" id="searchInput" placeholder="搜索漫画标题..." oninput="App.searchMangas(this.value)"></div>
+        <div class="manga-grid" id="mangaGrid"><div class="loading-overlay"><div class="loading-spinner"></div></div></div>
+      </div>
+
+      <!-- Upload -->
+      <div class="view" id="view-upload">
+        <div class="section-header"><h2 class="section-title">上传新漫画</h2></div>
+        <div class="card">
+          <div class="form-group"><label class="form-label">漫画标题 *</label><input class="form-input" id="uploadTitle" placeholder="输入漫画标题"></div>
+          <div class="form-group"><label class="form-label">作者</label><input class="form-input" id="uploadAuthor" placeholder="作者名称"></div>
+          <div class="form-group"><label class="form-label">简介</label><textarea class="form-textarea" id="uploadDesc" placeholder="漫画简介..."></textarea></div>
+          <div class="form-group">
+            <label class="form-label">封面图片 *</label>
+            <div class="upload-area" id="coverUploadArea" onclick="document.getElementById('coverFileInput').click()">
+              <div class="upload-icon">🖼️</div><div class="upload-text">点击选择封面图片</div>
+            </div>
+            <input type="file" id="coverFileInput" accept="image/*" style="display:none;" onchange="App.onCoverSelected(this)">
+            <div id="coverPreview" style="display:none;">
+              <img id="coverPreviewImg" style="max-width:200px;border-radius:6px;">
+              <div style="display:flex;gap:8px;margin-top:8px;">
+                <button class="btn btn-secondary btn-sm" onclick="App.editCoverInEditor()">✎ 编辑封面</button>
+                <button class="btn btn-ghost btn-sm" onclick="App.removeCover()">移除</button>
+              </div>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">标签（逗号分隔）</label><input class="form-input" id="uploadTags" placeholder="热血, 冒险, 搞笑"></div>
+          <hr style="border-color:var(--border);margin:20px 0;">
+          <h3 style="margin-bottom:12px;">章节管理</h3>
+          <div id="chaptersContainer"></div>
+          <button class="btn btn-secondary btn-sm" onclick="App.addChapter()" style="margin-top:8px;">+ 添加章节</button>
+          <div style="margin-top:24px;display:flex;gap:8px;">
+            <button class="btn btn-primary" id="publishBtn" onclick="App.publishManga()">发布漫画</button>
+            <button class="btn btn-secondary" onclick="App.navigate('home')">取消</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- My Works -->
+      <div class="view" id="view-myworks">
+        <div class="section-header"><h2 class="section-title">我的作品</h2></div>
+        <div class="manga-grid" id="myWorksGrid"><div class="loading-overlay"><div class="loading-spinner"></div></div></div>
+      </div>
+
+      <!-- Detail -->
+      <div class="view" id="view-detail"><div id="detailContent"></div></div>
+
+      <!-- Friends -->
+      <div class="view" id="view-friends">
+        <div class="section-header"><h2 class="section-title">好友</h2></div>
+        <div class="friends-layout">
+          <div>
+            <h3 style="margin-bottom:12px;">添加好友</h3>
+            <div class="search-bar">
+              <input class="form-input" id="friendSearchInput" placeholder="搜索用户名...">
+              <button class="btn btn-primary btn-sm" onclick="App.searchUsers()">搜索</button>
+            </div>
+            <div id="searchResults"></div>
+          </div>
+          <div>
+            <h3 style="margin-bottom:12px;">好友请求</h3>
+            <div id="pendingList"></div>
+            <h3 style="margin-bottom:12px;margin-top:16px;">好友列表</h3>
+            <div id="friendsList"><div class="loading-overlay"><div class="loading-spinner"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auth -->
+    <div id="authView" class="auth-container">
+      <div class="auth-card">
+        <div class="auth-title">📚 MangaReader</div>
+        <div class="auth-subtitle">漫画阅读平台 · 弹幕互动</div>
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-authtab="login" onclick="App.switchAuthTab('login')">登录</button>
+          <button class="auth-tab" data-authtab="register" onclick="App.switchAuthTab('register')">注册</button>
+        </div>
+        <div id="authLoginForm">
+          <div class="form-group"><label class="form-label">昵称或邮箱</label><input class="form-input" id="loginName" placeholder="输入昵称或邮箱"></div>
+          <div class="form-group"><label class="form-label">密码</label><input class="form-input" id="loginPass" type="password" placeholder="输入密码"></div>
+          <button class="btn btn-primary" style="width:100%;" onclick="App.doLogin()">登录</button>
+          <div class="form-error" id="loginError"></div>
+        </div>
+        <div id="authRegisterForm" style="display:none;">
+          <div class="form-group"><label class="form-label">昵称 *</label><input class="form-input" id="regNickname" placeholder="你的昵称"></div>
+          <div class="form-group"><label class="form-label">邮箱 *</label><input class="form-input" id="regEmail" type="email" placeholder="your@email.com"></div>
+          <div class="form-group"><label class="form-label">密码 *</label><input class="form-input" id="regPass" type="password" placeholder="设置密码"></div>
+          <button class="btn btn-primary" style="width:100%;" id="regSubmitBtn" onclick="App.doRegister()">注册</button>
+          <div class="form-error" id="regError"></div>
+        </div>
+        <div style="margin-top:16px;text-align:center;font-size:12px;color:var(--text-dim);">登录即代表同意平台使用规范</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reader -->
+  <div class="reader-container" id="readerContainer">
+    <div class="reader-toolbar">
+      <div class="reader-title" id="readerTitle"></div>
+      <div class="reader-controls">
+        <button class="dm-toggle on" onclick="App.toggleDanmaku()" id="danmakuToggleBtn">弹幕 开</button>
+        <input type="number" id="readerPageJump" min="1" style="width:50px;padding:4px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:4px;color:#fff;font-size:13px;text-align:center;" onchange="App.jumpToPage(parseInt(this.value)-1)" title="跳转页码">
+        <button class="btn btn-ghost btn-sm" onclick="App.closeReader()">✕ 关闭</button>
+      </div>
+    </div>
+    <div class="reader-page-container" id="readerPageContainer">
+      <div class="danmaku-layer" id="danmakuLayer"></div>
+      <div class="watermark-layer" id="watermarkLayer"></div>
+      <button class="reader-nav prev" id="readerPrev" onclick="App.prevPage()">‹</button>
+      <img class="reader-page-img" id="readerPageImg" src="" alt="漫画页面">
+      <button class="reader-nav next" id="readerNext" onclick="App.nextPage()">›</button>
+    </div>
+    <div class="danmaku-input-bar">
+      <input class="danmaku-input" id="danmakuInput" placeholder="发送弹幕..." onkeydown="if(event.key==='Enter')App.sendDanmaku()">
+      <button class="btn btn-primary btn-sm" onclick="App.sendDanmaku()">发送</button>
+    </div>
+    <div class="reader-page-info" id="readerPageInfo"></div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <div class="modal-header"><div class="modal-title">编辑漫画</div><button class="modal-close" onclick="App.closeEditModal()">✕</button></div>
+      <div class="form-group"><label class="form-label">标题</label><input class="form-input" id="editTitle"></div>
+      <div class="form-group"><label class="form-label">作者</label><input class="form-input" id="editAuthor"></div>
+      <div class="form-group"><label class="form-label">简介</label><textarea class="form-textarea" id="editDesc"></textarea></div>
+      <div class="form-group"><label class="form-label">标签（逗号分隔）</label><input class="form-input" id="editTags"></div>
+      <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="App.saveEditManga()">保存</button>
+        <button class="btn btn-secondary" onclick="App.closeEditModal()">取消</button>
+        <button class="btn btn-secondary" onclick="App.openWatermarkModal()">版权保护</button>
+        <button class="btn btn-danger" onclick="App.openDeleteModal('manga')">删除漫画</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chapter Edit Modal -->
+  <div class="modal-overlay" id="chapterEditModal">
+    <div class="modal" style="max-width:800px;">
+      <div class="modal-header"><div class="modal-title" id="chapterEditTitle">编辑章节页面</div><button class="modal-close" onclick="App.closeChapterEditModal()">✕</button></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="App.addPagesToChapter()">+ 添加图片</button>
+        <button class="btn btn-secondary btn-sm" onclick="App.saveChapterPages()">保存修改</button>
+      </div>
+      <input type="file" id="chapterAddPagesInput" accept="image/*" multiple style="display:none;" onchange="App.onAddPagesSelected(this)">
+      <div class="page-edit-grid" id="pageEditGrid"></div>
+    </div>
+  </div>
+
+  <!-- Delete Confirm Modal -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-header"><div class="modal-title">确认删除</div><button class="modal-close" onclick="App.closeDeleteModal()">✕</button></div>
+      <p id="deleteMsg" style="margin-bottom:16px;color:var(--text);">确定要删除这部漫画吗？所有章节和图片将被永久删除，无法恢复。</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="App.closeDeleteModal()">取消</button>
+        <button class="btn btn-danger" id="deleteConfirmBtn" onclick="App.confirmDelete()">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Watermark Toggle Modal (in edit modal) -->
+  <div class="modal-overlay" id="watermarkModal">
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-header"><div class="modal-title">版权保护设置</div><button class="modal-close" onclick="App.closeWatermarkModal()">✕</button></div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="watermarkToggle" style="width:18px;height:18px;accent-color:var(--primary);">
+          <span style="font-size:14px;">启用防盗水印</span>
+        </label>
+        <div class="form-hint">开启后，阅读时图片上会叠加半透明作者水印，且禁止右键保存和拖拽。</div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="App.closeWatermarkModal()">取消</button>
+        <button class="btn btn-primary" onclick="App.saveWatermarkSetting()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Editor -->
+  <div class="editor-overlay" id="editorOverlay">
+    <div class="editor-toolbar">
+      <button class="editor-tool-btn active" data-tool="brush" title="画笔" onclick="Editor.selectTool('brush')">✏️</button>
+      <button class="editor-tool-btn" data-tool="eraser" title="橡皮擦" onclick="Editor.selectTool('eraser')">🧹</button>
+      <button class="editor-tool-btn" data-tool="line" title="直线" onclick="Editor.selectTool('line')">📏</button>
+      <button class="editor-tool-btn" data-tool="rect" title="矩形" onclick="Editor.selectTool('rect')">▭</button>
+      <button class="editor-tool-btn" data-tool="circle" title="圆形" onclick="Editor.selectTool('circle')">⭕</button>
+      <button class="editor-tool-btn" data-tool="fill" title="填充" onclick="Editor.selectTool('fill')">🪣</button>
+      <button class="editor-tool-btn" data-tool="text" title="文字" onclick="Editor.selectTool('text')">📝</button>
+      <div class="editor-separator"></div>
+      <input type="color" class="editor-color-picker" id="editorColor" value="#e74c3c" onchange="Editor.setColor(this.value)">
+      <input type="range" class="editor-size-slider" id="editorSize" min="1" max="60" value="4" onchange="Editor.setSize(parseInt(this.value))">
+      <span class="editor-info" id="editorSizeLabel">4px</span>
+      <div class="editor-separator"></div>
+      <button class="editor-tool-btn" title="撤销" onclick="Editor.undo()">↶</button>
+      <button class="editor-tool-btn" title="重做" onclick="Editor.redo()">↷</button>
+      <button class="editor-tool-btn" title="清空" onclick="Editor.clearCanvas()">🗑️</button>
+      <div class="editor-separator"></div>
+      <div class="color-palette">
+        <div class="color-swatch" style="background:#000000" onclick="Editor.setColor('#000000')"></div>
+        <div class="color-swatch" style="background:#ffffff" onclick="Editor.setColor('#ffffff')"></div>
+        <div class="color-swatch" style="background:#e74c3c" onclick="Editor.setColor('#e74c3c')"></div>
+        <div class="color-swatch" style="background:#e67e22" onclick="Editor.setColor('#e67e22')"></div>
+        <div class="color-swatch" style="background:#f39c12" onclick="Editor.setColor('#f39c12')"></div>
+        <div class="color-swatch" style="background:#2ecc71" onclick="Editor.setColor('#2ecc71')"></div>
+        <div class="color-swatch" style="background:#1abc9c" onclick="Editor.setColor('#1abc9c')"></div>
+        <div class="color-swatch" style="background:#3498db" onclick="Editor.setColor('#3498db')"></div>
+        <div class="color-swatch" style="background:#6c5ce7" onclick="Editor.setColor('#6c5ce7')"></div>
+        <div class="color-swatch" style="background:#9b59b6" onclick="Editor.setColor('#9b59b6')"></div>
+        <div class="color-swatch" style="background:#ecf0f1" onclick="Editor.setColor('#ecf0f1')"></div>
+        <div class="color-swatch" style="background:#95a5a6" onclick="Editor.setColor('#95a5a6')"></div>
+      </div>
+      <div class="editor-separator"></div>
+      <button class="editor-tool-btn" title="对称辅助线" onclick="Editor.toggleSymmetry()">〰️</button>
+      <button class="editor-tool-btn" title="网格辅助" onclick="Editor.toggleGrid()">▦</button>
+      <button class="editor-tool-btn" title="透视辅助" onclick="Editor.togglePerspective()">◢</button>
+    </div>
+    <div class="editor-canvas-area">
+      <div class="editor-canvas-wrapper">
+        <canvas id="editorCanvas" width="800" height="1200"></canvas>
+        <canvas class="editor-canvas-overlay" id="editorOverlayCanvas" width="800" height="1200"></canvas>
+      </div>
+    </div>
+    <div class="editor-bottom-bar">
+      <div class="editor-layer-panel">
+        <span class="editor-info" id="editorCoords">坐标: 0, 0</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="editor-info" id="editorCanvasInfo">800 × 1200</span>
+        <button class="btn btn-secondary btn-sm" onclick="Editor.cancel()">取消</button>
+        <button class="btn btn-primary btn-sm" onclick="Editor.save()">保存图片</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
